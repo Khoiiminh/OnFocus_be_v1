@@ -30,7 +30,10 @@
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
+    "@google-cloud/pubsub": "^5.3.0",
     "express": "^5.2.1",
-    "express-session": "^1.19.0"
+    "express-session": "^1.19.0",
+    "googleapis": "^171.4.0",
+    "winston": "^3.19.0"
   }
 }

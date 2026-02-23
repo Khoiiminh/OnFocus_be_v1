@@ -8,3 +8,6 @@ node_modules/
 .env.test
 .env.staging
 .env.template
+
+onfocus_googleclient_credentials.json
+onfocus_linkedinclient_credentials.json
