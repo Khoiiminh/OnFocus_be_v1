@@ -1,4 +1,5 @@
 node_modules/
+certs/ca.pem
 
 .env
 .env.production
