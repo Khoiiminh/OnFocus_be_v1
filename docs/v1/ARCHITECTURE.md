@@ -36,9 +36,9 @@ Full message or notification content is fetched **on demand** when the user sele
     - LinkedIn's notifications and the full context in each notification
 ### Query:                                                  ******
     - PLain SQL query 
-    - mysql2/promise                                        ******
-    - small database wrapper                                ******
-    - transaction helper                                    ******
+    - mysql2 dependency                                       
+    - Need small database wrapper                                ******
+    - Need transaction helper                                    ******
 ### Background Worker Runtime: (run in same repo but separate process)
     - Gmail webhook endpoint (Pub/Sub push)
     - LinkedIn polling worker
@@ -77,6 +77,7 @@ Each feature owns:
   
 ### Recommanded:
 
+```bash
 src/
 ├── app/                      # Application bootstrap & global wiring
 │   ├── app.js                # Express app (middlewares, routes mounting)
@@ -138,73 +139,66 @@ src/
 │   ├── types/                # Shared TypeScript types (if TS later)
 │   └── utils/                # Pure utility helpers
 │
-└── worker/                   # Background process runtime (separate process)
+└── worker/                   # Background process runtime (separate process) MORE DETAILS BELOW
     ├── index.js              # Worker bootstrap
     └── jobs/                 # Scheduled / polling jobs
         ├── linkedin-poll.job.js
         └── token-refresh.job.js
+```
 
-### transaction.js ( infrastructure/database/ )
+### ---MORE DETAILS HERE--- transaction.js ( infrastructure/database/ )
 
 #### What Problem Does It Solve?
 
 Imagine this flow in OnFocus:
 
-Insert new inbox item
-
-Insert inbox metadata
-
-Update sync cursor
-
-Log sync event
+    - Insert new inbox item
+    - Insert inbox metadata
+    - Update sync cursor
+    - Log sync event
 
 If step 3 fails…
 
-Without a transaction:
+    **- Without a transaction: **
 
-Step 1 and 2 are already committed
+      - Step 1 and 2 are already committed
+      - Database is now inconsistent
+      - You have partial state
+      - Sync logic breaks
 
-Database is now inconsistent
+    **- With a transaction: **
 
-You have partial state
+      - Either ALL steps succeed
+      - Or EVERYTHING rolls back
 
-Your sync logic breaks
-
-With a transaction:
-
-Either ALL steps succeed
-
-Or EVERYTHING rolls back
-
-That’s atomicity (ACID principle).
 
 #### What transaction.js Should Handle
 
 It should:
 
-Open DB connection
+    - Open DB connection
 
-Begin transaction
+    - Begin transaction
 
-Commit if success
+    - Commit if success
 
-Rollback if error
+    - Rollback if error
 
-Release connection
+    - Release connection
 
-Bubble error upward
+    - Bubble error upward
 
 It should NOT:
 
-Contain business logic
+    - Contain business logic
 
-Contain SQL
+    - Contain SQL
 
-Know about inbox/users/etc
+    - Know about inbox/users/etc
 
-It is purely infrastructure.
+** --> It is purely infrastructure. **
 
-Clean Implementation (mysql2/promise)
+##### Clean Implementation (mysql2/promise)
 const pool = require('./connection');
 
 async function withTransaction(callback) {
@@ -227,7 +221,7 @@ async function withTransaction(callback) {
 
 module.exports = { withTransaction };
 
-How You Use It (Service Layer)
+##### How You Use It (Service Layer)
 
 Example: Gmail sync ingestion
 
@@ -246,11 +240,41 @@ exports.ingestMessage = async (data) => {
 
 Notice:
 
-Repository methods receive conn
+    - Repository methods receive conn
 
-All queries use same connection
+    - All queries use same connection
 
-If anything fails → everything rolls back
+    - If anything fails → everything rolls back
+
+### ---MORE DETAILS HERE--- worker/ (System-triggered)
+#### **Why worker/ Exists**
+
+Because not everything should run inside your HTTP server.
+
+The system has two different runtime responsibilities:
+
+1️⃣ API Server (Request/Response world)
+
+    - Handles user login
+    - Returns inbox list
+    - Handles OAuth callbacks
+    - Validates sessions
+    - Returns JSON
+
+--> This is synchronous, user-triggered.
+
+2️⃣ Background Processing (Event world)
+
+    - Gmail webhook ingestion
+    - LinkedIn polling
+    - Token refresh scheduler
+    - Retry failed sync
+    - Dead-letter handling
+    - Cleanup jobs
+
+--> This is asynchronous, system-triggered.
+
+And that is why worker/ exists.
 
 ## Production goal:
 >  “When Gmail or LinkedIn receives something, it appears immediately in my app’s inbox, and the user can open it to read.” 
@@ -402,13 +426,13 @@ No SDK. Just standard OAuth 2.0 + axios.
 
 ---
 
-## 1️⃣ Install dependencies
+### 1️⃣ Install dependencies
 ```bash
 npm install axios express dotenv uuid
 ```
 ---
 
-## 2️⃣ Environment variables
+### 2️⃣ Environment variables
 ```env
 LINKEDIN_CLIENT_ID=your_client_id
 LINKEDIN_CLIENT_SECRET=your_client_secret
@@ -416,7 +440,7 @@ LINKEDIN_REDIRECT_URI=http://localhost:3000/api/v1/oauth/linkedin/callback
 ```
 ---
 
-## 3️⃣ OAuth Flow Overview
+### 3️⃣ OAuth Flow Overview
 ```text
 1. User clicks "Connect LinkedIn"
 2. Redirect to LinkedIn authorization URL
@@ -426,7 +450,7 @@ LINKEDIN_REDIRECT_URI=http://localhost:3000/api/v1/oauth/linkedin/callback
 ```
 ---
 
-## 4️⃣ Step 1 — Redirect user to LinkedIn
+### 4️⃣ Step 1 — Redirect user to LinkedIn
 ```js
 // routes/oauth.routes.js
 const express = require("express");
@@ -453,7 +477,7 @@ module.exports = router;
 ```
 ---
 
-## 5️⃣ Step 2 — Callback endpoint
+### 5️⃣ Step 2 — Callback endpoint
 ```js
 // routes/oauth.routes.js
 const axios = require("axios");
@@ -519,7 +543,7 @@ router.get("/linkedin/callback", async (req, res) => {
 ```
 ---
 
-## 6️⃣ What LinkedIn Actually Returns
+### 6️⃣ What LinkedIn Actually Returns
 Typical token response:
 
 ```json
@@ -535,7 +559,7 @@ Typical token response:
       - After expiry → user reconnect required (unless using specific partner APIs).
 ---
 
-## 7️⃣ How This Fits Into Your OnFocus Design
+### 7️⃣ How This Fits Into Your OnFocus Design
 This maps cleanly to your:
 
 ### `connected_accounts` 
@@ -552,7 +576,7 @@ Then your LinkedIn poll worker uses this token.
 
 ---
 
-## 8️⃣ Security Improvements (Important for Production)
+### 8️⃣ Security Improvements (Important for Production)
 You must:
 
       - Generate random `state`  (UUID)
