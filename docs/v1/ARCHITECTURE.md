@@ -56,7 +56,7 @@ Full message or notification content is fetched **on demand** when the user sele
 - Feature-based / vertical slice
 Structure by domain:
 
-```
+```bash
 src/
 modules/
   auth/
@@ -199,6 +199,7 @@ It should NOT:
 ** --> It is purely infrastructure. **
 
 ##### Clean Implementation (mysql2/promise)
+```bash
 const pool = require('./connection');
 
 async function withTransaction(callback) {
@@ -220,11 +221,12 @@ async function withTransaction(callback) {
 }
 
 module.exports = { withTransaction };
+```
 
 ##### How You Use It (Service Layer)
 
 Example: Gmail sync ingestion
-
+```bash
 const { withTransaction } = require('../../infrastructure/database/transaction');
 const inboxRepo = require('./inbox.repository');
 const syncRepo = require('../sync/sync.repository');
@@ -236,7 +238,7 @@ exports.ingestMessage = async (data) => {
     await syncRepo.updateCursor(conn, data.cursor);
   });
 };
-
+```
 
 Notice:
 
