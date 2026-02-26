@@ -21,8 +21,8 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node ./app/server.js",
+    "dev": "nodemon ./app/server.js",
     "test": "jest"
   },
   "devDependencies": {
