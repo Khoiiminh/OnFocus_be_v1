@@ -2,15 +2,26 @@ import './config/env.config.js';
 import http from 'node:http';
 import app from './app.js';
 import mysqlConnection from '../infrastructure/database/connection.js';
+import appConfig from './config/app.config.js';
 
 
-const PORT = process.env.PORT;
+const PORT = appConfig.port;
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => {
-    console.log(`OnFocus API running on port: ${PORT}`);
-});
+async function startServer() {
+    try {
+        await mysqlConnection.query('SELECT 1');
+        console.log('Database connected successfully');
+
+        server.listen(PORT, (request, response) => {
+            console.log(`OnFocus API running on port: ${PORT}`);
+        })
+    } catch (error) {
+        console.error('Failed on something!', error);
+        process.exit(1);
+    }
+}
 
 /**
  * Graceful Shutdown
@@ -30,5 +41,6 @@ async function shutdown(signal) {
     });
 }
 
-process.on('SIGINT', () => { shutdown('SIGINT')});
-process.on('SIGTERM', () => { shutdown('SIGTERM')});
+startServer();
+process.on('SIGINT', () => { shutdown('SIGINT')});      // Internally killed with Ctrl + C
+process.on('SIGTERM', () => { shutdown('SIGTERM')});    // Externally killed by process manager ( Docker, Kubernetes )

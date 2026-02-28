@@ -1,0 +1,15 @@
+{
+    "watch": ["app"],
+    "ext": "js,mjs,json,env,ts",
+    "ignore": [
+        "node_modules",
+        "docs",
+        "certs",
+        "infrastructure/database/schema",
+        "test"
+    ],
+    "exec": "node --inspect ./app/server.js",
+    "delay": 200,
+    "legacyWatch": true,
+    "verbose": true
+}

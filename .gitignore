@@ -2,6 +2,7 @@ node_modules/
 certs/ca.pem
 .vscode/
 track/
+test/
 
 .env
 .env.production

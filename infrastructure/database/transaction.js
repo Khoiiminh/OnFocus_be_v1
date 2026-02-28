@@ -1,7 +1,7 @@
-import MySQLConnection from "./connection";
+import mysqlConnection from "./connection.js";
 
 export async function withTransaction( callback ) {
-    const connection = await MySQLConnection.getConnection();
+    const connection = await mysqlConnection.getConnection();
     
     try {
         await connection.beginTransaction();
