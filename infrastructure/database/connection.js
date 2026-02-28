@@ -1,16 +1,17 @@
 import mysql from 'mysql2/promise';
 import fs from 'fs';
+import dbConfig from '../../app/config/db.config.js';
 
 class MySQLConnection {
     constructor() {
         this.pool = mysql.createPool({
-            host: process.env.MYSQL_HOST,
-            port: process.env.MYSQL_PORT,
-            user: process.env.MYSQL_USER,
-            password: process.env.MYSQL_PASSWORD,
-            database: process.env.MYSQL_DB_NAME,
+            host: dbConfig.mysql_host,
+            port: dbConfig.mysql_port,
+            user: dbConfig.mysql_user,
+            password: dbConfig.mysql_password,
+            database: dbConfig.mysql_database,
             ssl: {
-                ca: fs.readFileSync(process.env.MYSQL_SSL_CA),
+                ca: fs.readFileSync(dbConfig.mysql_ssl_ca),
             },
             waitForConnections: true,
             connectionLimit: 10,
