@@ -1,5 +1,29 @@
 # CODING RULES
 
+- [CODING RULES](#coding-rules)
+  - [1️⃣ config/ — Application Configuration Layer](#1️⃣-config--application-configuration-layer)
+    - [Purpose:](#purpose)
+    - [What belongs here:](#what-belongs-here)
+    - [What should NOT go here:](#what-should-not-go-here)
+  - [2️⃣ database/ — Data Access Layer (DAL)](#2️⃣-database--data-access-layer-dal)
+    - [Purpose:](#purpose-1)
+    - [What belongs here:](#what-belongs-here-1)
+    - [What should NOT go here:](#what-should-not-go-here-1)
+  - [3️⃣ ssl/ or certs/ — Security Assets](#3️⃣-ssl-or-certs--security-assets)
+    - [Purpose:](#purpose-2)
+    - [What belongs here:](#what-belongs-here-2)
+    - [What should NOT go here:](#what-should-not-go-here-2)
+  - [Database Migration](#database-migration)
+    - [Naming Files](#naming-files)
+    - [Inside each migration:](#inside-each-migration)
+  - [MySQL connection and transaction for SQL queries](#mysql-connection-and-transaction-for-sql-queries)
+    - [**___Let take a simple order flow as an example___**](#let-take-a-simple-order-flow-as-an-example)
+    - [**1️⃣ connection.js (Singleton Pool)**](#1️⃣-connectionjs-singleton-pool)
+    - [**2️⃣ transaction.js**](#2️⃣-transactionjs)
+    - [**3️⃣ order.repository.js (RAW SQL ONLY)**](#3️⃣-orderrepositoryjs-raw-sql-only)
+    - [**4️⃣ order.service.js (Business Logic + Transaction)**](#4️⃣-orderservicejs-business-logic--transaction)
+
+
 ## 1️⃣ config/ — Application Configuration Layer
 ### Purpose:
 

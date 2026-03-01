@@ -1,10 +1,9 @@
-# OnFocus
+# 1. OnFocus
 **OnFocus** is a cross-platform web application that centralizes user communications from external services such as **Gmail** and **LinkedIn** into a single, unified inbox experience.
 
 OnFocus listens for **near-real-time mailbox and notification changes** from connected platforms and incrementally synchronizes new items into its own system. When a new email or notification arrives, OnFocus promptly detects the change, retrieves the necessary metadata (such as sender, subject, timestamp, and preview), and updates the user’s inbox view without requiring manual refresh.
 
 Full message or notification content is fetched **on demand** when the user selects an item, ensuring fast inbox updates, efficient API usage, and scalable synchronization. 
-
 
 
     - users
@@ -14,45 +13,85 @@ Full message or notification content is fetched **on demand** when the user sele
     - inbox 
     - inbox content
 
+- [1. OnFocus](#1-onfocus)
+  - [1.1. **Stacks:**](#11-stacks)
+    - [1.1.1. Frontend:](#111-frontend)
+    - [1.1.2. Backend:](#112-backend)
+    - [1.1.3. Database:](#113-database)
+    - [1.1.4. External services:](#114-external-services)
+    - [1.1.5. Query:](#115-query)
+    - [1.1.6. Background Worker Runtime: (run in same repo but separate process)](#116-background-worker-runtime-run-in-same-repo-but-separate-process)
+    - [1.1.7. Logging:](#117-logging)
+  - [1.2. Architecture:](#12-architecture)
+  - [1.3. Structural Organization:](#13-structural-organization)
+    - [1.3.1. Recommanded:](#131-recommanded)
+    - [1.3.2. ---MORE DETAILS HERE--- transaction.js ( infrastructure/database/ )](#132----more-details-here----transactionjs--infrastructuredatabase-)
+      - [1.3.2.1. What Problem Does It Solve?](#1321-what-problem-does-it-solve)
+      - [1.3.2.2. What transaction.js Should Handle](#1322-what-transactionjs-should-handle)
+        - [1.3.2.2.1. Clean Implementation (mysql2/promise)](#13221-clean-implementation-mysql2promise)
+        - [1.3.2.2.2. How You Use It (Service Layer)](#13222-how-you-use-it-service-layer)
+    - [1.3.3. ---MORE DETAILS HERE--- worker/ (System-triggered)](#133----more-details-here----worker-system-triggered)
+      - [1.3.3.1. **Why worker/ Exists**](#1331-why-worker-exists)
+  - [1.4. Production goal:](#14-production-goal)
+  - [1.5. _**connected\_accounts**_ - Integration boundary](#15-connected_accounts---integration-boundary)
+    - [1.5.1. Ex:](#151-ex)
+  - [1.6. \_**inbox\_items**\_\_\*\* -  \*\*\_The left panel](#16-_inbox_items__----_the-left-panel)
+    - [1.6.1. Why inbox metadata must be separate](#161-why-inbox-metadata-must-be-separate)
+  - [1.7. _**inbox\_item\_content**_ - The right panel](#17-inbox_item_content---the-right-panel)
+    - [1.7.1. Why this MUST be separate](#171-why-this-must-be-separate)
+  - [1.8. Redirect URL](#18-redirect-url)
+  - [1.9. So what must you do for LinkedIn?](#19-so-what-must-you-do-for-linkedin)
+  - [1.10. Important Reality Check](#110-important-reality-check)
+  - [1.11. \*\*a clean backend-only LinkedIn OAuth 2.0 example \*\*(Node.js + Express).](#111-a-clean-backend-only-linkedin-oauth-20-example-nodejs--express)
+    - [1.11.1. 1️⃣ Install dependencies](#1111-1️⃣-install-dependencies)
+    - [1.11.2. 2️⃣ Environment variables](#1112-2️⃣-environment-variables)
+    - [1.11.3. 3️⃣ OAuth Flow Overview](#1113-3️⃣-oauth-flow-overview)
+    - [1.11.4. 4️⃣ Step 1 — Redirect user to LinkedIn](#1114-4️⃣-step-1--redirect-user-to-linkedin)
+    - [1.11.5. 5️⃣ Step 2 — Callback endpoint](#1115-5️⃣-step-2--callback-endpoint)
+    - [1.11.6. 6️⃣ What LinkedIn Actually Returns](#1116-6️⃣-what-linkedin-actually-returns)
+    - [1.11.7. 7️⃣ How This Fits Into Your OnFocus Design](#1117-7️⃣-how-this-fits-into-your-onfocus-design)
+    - [1.11.8. `connected_accounts`](#1118-connected_accounts)
+    - [1.11.9. 8️⃣ Security Improvements (Important for Production)](#1119-8️⃣-security-improvements-important-for-production)
 
-## **Stacks:**
-### Frontend:
+
+## 1.1. **Stacks:**
+### 1.1.1. Frontend:
     - React Vite, JavaScript, CSS
     - React-router-dom for navigation
     - Storybook for developing components
     - Redux toolkit for data fetching and state management
-### Backend:
+### 1.1.2. Backend:
     - node.js express.js
     - Session id for authorization and authentication
     - **MAYBE** axios (LinkedIn fetch due to its lack of pubsub support)
     - dotenvx 
     - joi ( request validation )  
     - express-rate-limit ( Rate Limiting )
-### Database:
+### 1.1.3. Database:
     - MySQL ( hosted on Aiven )
     - Flyway for database migrations
-### External services:
+### 1.1.4. External services:
     - Gmail
     - LinkedIn's notifications and the full context in each notification
-### Query:                                                  ******
+### 1.1.5. Query:                                                  
     - PLain SQL query 
     - mysql2 dependency                                       
     - Need small database wrapper                                ******
     - Need transaction helper                                    ******
-### Background Worker Runtime: (run in same repo but separate process)
+### 1.1.6. Background Worker Runtime: (run in same repo but separate process)
     - Gmail webhook endpoint (Pub/Sub push)
     - LinkedIn polling worker
     - Token refresh scheduler
-### Logging:
+### 1.1.7. Logging:
     - Wiston
 
 
-## Architecture:
+## 1.2. Architecture:
     - Event-Driven architecture
     - Gmail ( Google Pub/Sub )
     - LinkedIn ( don't know yet )
 
-## Structural Organization:
+## 1.3. Structural Organization:
 - Feature-based / vertical slice
 Structure by domain:
 
@@ -75,7 +114,7 @@ Each feature owns:
     - DB logic
     - Events
   
-### Recommanded:
+### 1.3.1. Recommanded:
 
 ```bash
 src/
@@ -146,9 +185,9 @@ src/
         └── token-refresh.job.js
 ```
 
-### ---MORE DETAILS HERE--- transaction.js ( infrastructure/database/ )
+### 1.3.2. ---MORE DETAILS HERE--- transaction.js ( infrastructure/database/ )
 
-#### What Problem Does It Solve?
+#### 1.3.2.1. What Problem Does It Solve?
 
 Imagine this flow in OnFocus:
 
@@ -172,7 +211,7 @@ If step 3 fails…
       - Or EVERYTHING rolls back
 
 
-#### What transaction.js Should Handle
+#### 1.3.2.2. What transaction.js Should Handle
 
 It should:
 
@@ -198,7 +237,7 @@ It should NOT:
 
 ** --> It is purely infrastructure. **
 
-##### Clean Implementation (mysql2/promise)
+##### 1.3.2.2.1. Clean Implementation (mysql2/promise)
 ```bash
 const pool = require('./connection');
 
@@ -223,7 +262,7 @@ async function withTransaction(callback) {
 module.exports = { withTransaction };
 ```
 
-##### How You Use It (Service Layer)
+##### 1.3.2.2.2. How You Use It (Service Layer)
 
 Example: Gmail sync ingestion
 ```bash
@@ -248,8 +287,8 @@ Notice:
 
     - If anything fails → everything rolls back
 
-### ---MORE DETAILS HERE--- worker/ (System-triggered)
-#### **Why worker/ Exists**
+### 1.3.3. ---MORE DETAILS HERE--- worker/ (System-triggered)
+#### 1.3.3.1. **Why worker/ Exists**
 
 Because not everything should run inside your HTTP server.
 
@@ -278,7 +317,7 @@ The system has two different runtime responsibilities:
 
 And that is why worker/ exists.
 
-## Production goal:
+## 1.4. Production goal:
 >  “When Gmail or LinkedIn receives something, it appears immediately in my app’s inbox, and the user can open it to read.” 
 
 That **forces** a separation of concerns:
@@ -289,10 +328,10 @@ That **forces** a separation of concerns:
 | Inbox list (fast)               | The left panel must load instantly |
 | Full content (heavy)            | Only load when the user clicks     |
 
-## _**connected_accounts**_ - Integration boundary
+## 1.5. _**connected_accounts**_ - Integration boundary
 "A user has granted OnFocus permission to access this specific external account."
 
-### Ex:
+### 1.5.1. Ex:
     - User A -> Gmail account johndoe@gmail.com
     - User A -> LinkedIn account john-doe
 **This table is not about messages       ==>      It is about permission + sync state.**
@@ -322,7 +361,7 @@ This table is the **source of truth for ingestion**.
 | user_id             | Ownership                                     |
 | service_id          | Gmail vs LinkedIn                             |
 
-## _**inbox_items**__** -  **_The left panel
+## 1.6. _**inbox_items**__** -  **_The left panel
 "One row = one line in the inbox list."
 
 => **UI-driven **data, intentionally
@@ -331,7 +370,7 @@ This table is the **source of truth for ingestion**.
     - What's the subject?
     - When did it arrive?
     - Is it unread?
-### Why inbox metadata must be separate
+### 1.6.1. Why inbox metadata must be separate
 If content is mixed here:
 
     - The left panel becomes slow
@@ -356,7 +395,7 @@ This table is **optimized for scrolling**.
 | connected_account_id | Source account                   |
 
 
-## _**inbox_item_content**_ - The right panel
+## 1.7. _**inbox_item_content**_ - The right panel
 "Everything expensive that you only load on demand."
 
 **Ex:**
@@ -367,7 +406,7 @@ This table is **optimized for scrolling**.
     - Provider-specific raw data
 
 
-### Why this MUST be separate
+### 1.7.1. Why this MUST be separate
 Reasons:
 
     - Emails can be huge
@@ -387,13 +426,13 @@ This is classic **lazy loading**.
 | fetched_at  | Cache control / refetch logic   |
 
 
-## Redirect URL
+## 1.8. Redirect URL
 http://localhost:3000/api/v1/oauth/google/callback
 
 http://localhost:3000/api/v1/oauth/linkedin/callback
 
 
-## So what must you do for LinkedIn?
+## 1.9. So what must you do for LinkedIn?
 LinkedIn is not similar to Google Gmail
 
 You must implement **polling**.
@@ -410,7 +449,7 @@ For each active LinkedIn connected_account:
 ```
 
 
-## Important Reality Check
+## 1.10. Important Reality Check
 Even with Gmail push:
 
 It is **near real-time**, not instant.
@@ -423,18 +462,18 @@ So you need:
     - Recovery logic if Pub/Sub fails
 
 
-## **a clean backend-only LinkedIn OAuth 2.0 example **(Node.js + Express).
+## 1.11. **a clean backend-only LinkedIn OAuth 2.0 example **(Node.js + Express).
 No SDK. Just standard OAuth 2.0 + axios.
 
 ---
 
-### 1️⃣ Install dependencies
+### 1.11.1. 1️⃣ Install dependencies
 ```bash
 npm install axios express dotenv uuid
 ```
 ---
 
-### 2️⃣ Environment variables
+### 1.11.2. 2️⃣ Environment variables
 ```env
 LINKEDIN_CLIENT_ID=your_client_id
 LINKEDIN_CLIENT_SECRET=your_client_secret
@@ -442,7 +481,7 @@ LINKEDIN_REDIRECT_URI=http://localhost:3000/api/v1/oauth/linkedin/callback
 ```
 ---
 
-### 3️⃣ OAuth Flow Overview
+### 1.11.3. 3️⃣ OAuth Flow Overview
 ```text
 1. User clicks "Connect LinkedIn"
 2. Redirect to LinkedIn authorization URL
@@ -452,7 +491,7 @@ LINKEDIN_REDIRECT_URI=http://localhost:3000/api/v1/oauth/linkedin/callback
 ```
 ---
 
-### 4️⃣ Step 1 — Redirect user to LinkedIn
+### 1.11.4. 4️⃣ Step 1 — Redirect user to LinkedIn
 ```js
 // routes/oauth.routes.js
 const express = require("express");
@@ -479,7 +518,7 @@ module.exports = router;
 ```
 ---
 
-### 5️⃣ Step 2 — Callback endpoint
+### 1.11.5. 5️⃣ Step 2 — Callback endpoint
 ```js
 // routes/oauth.routes.js
 const axios = require("axios");
@@ -545,7 +584,7 @@ router.get("/linkedin/callback", async (req, res) => {
 ```
 ---
 
-### 6️⃣ What LinkedIn Actually Returns
+### 1.11.6. 6️⃣ What LinkedIn Actually Returns
 Typical token response:
 
 ```json
@@ -561,10 +600,10 @@ Typical token response:
       - After expiry → user reconnect required (unless using specific partner APIs).
 ---
 
-### 7️⃣ How This Fits Into Your OnFocus Design
+### 1.11.7. 7️⃣ How This Fits Into Your OnFocus Design
 This maps cleanly to your:
 
-### `connected_accounts` 
+### 1.11.8. `connected_accounts` 
 | Column              | Value               |
 | ------------------- | ------------------- |
 | external_account_id | linkedinUser.sub    |
@@ -578,7 +617,7 @@ Then your LinkedIn poll worker uses this token.
 
 ---
 
-### 8️⃣ Security Improvements (Important for Production)
+### 1.11.9. 8️⃣ Security Improvements (Important for Production)
 You must:
 
       - Generate random `state`  (UUID)
